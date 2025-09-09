@@ -95,7 +95,7 @@ function startRoulette() {
     // Esconder detalhes do local anterior
     document.getElementById('place-detail').style.display = 'none';
     
-    const button = document.querySelector('.spin-button');
+    const button = document.getElementById('spinButton');
     button.disabled = true;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Girando...';
     
@@ -105,23 +105,25 @@ function startRoulette() {
     const randomIndex = Math.floor(Math.random() * places.length);
     selectedPlace = places[randomIndex];
     
-    console.log("Resultado sorteado:", selectedPlace.name);
+    console.log("Resultado sorteado:", selectedPlace.name, "Índice:", randomIndex);
     
     // 2. CALCULAR: Ângulo exato para parar no lugar sorteado
     const wheel = document.getElementById('wheel');
     const totalItems = places.length;
     const degreesPerItem = 360 / totalItems;
     
-    // Calcular a posição final exata (em graus)
+    // CÁLCULO CORRIGIDO:
+    // - Cada item começa em (índice * degreesPerItem) graus
+    // - Precisamos fazer a roleta parar com a SETA apontando para o item
+    // - A seta está no topo (0 graus), então o item deve estar a 90 graus da seta
     const extraRotations = 5; // Número de voltas completas extras para efeito
-    const targetRotation = (extraRotations * 360) + (randomIndex * degreesPerItem);
+    
+    // Ângulo final = voltas completas + posição do item - offset para alinhar com a seta
+    const targetRotation = (extraRotations * 360) + (randomIndex * degreesPerItem) + (360 - 90);
     
     // 3. APLICAR: A rotação calculada
     wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.21, 0.99)';
     wheel.style.transform = `rotate(${targetRotation}deg)`;
-    
-    // Atualizar a rotação atual para a próxima vez
-    currentRotation = targetRotation % 360;
     
     // Quando a roleta parar
     setTimeout(() => {
