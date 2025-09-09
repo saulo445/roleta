@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sorteio do Nosso Rolê</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css"> <!-- 🔽 SEU CSS -->
-</head>
+    <style>
         * {
             margin: 0;
             padding: 0;
@@ -136,6 +135,17 @@
             font-size: 2rem;
             color: #ff6b6b;
             filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.7));
+            display: none;
+        }
+        
+        .wheel-pointer.visible {
+            display: block;
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+            100% { transform: translateX(-50%) scale(1); opacity: 1; }
         }
         
         .controls {
@@ -240,7 +250,6 @@
             color: #ff6b6b;
         }
         
-        /* NOVOS ESTILOS PARA A IMAGEM AMPLIADA */
         .place-detail {
             display: none;
             margin-top: 30px;
@@ -304,7 +313,7 @@
         </div>
         
         <div class="controls">
-            <button class="spin-button" onclick="startRoulette()">
+            <button class="spin-button" id="spinButton">
                 <i class="fas fa-dice"></i> Sortear Agora!
             </button>
         </div>
@@ -315,7 +324,6 @@
             <div class="timer" id="timer">Confirmando em: 10 segundos</div>
         </div>
         
-        <!-- NOVA SEÇÃO PARA DETALHES DO LOCAL -->
         <div id="place-detail" class="place-detail">
             <h2>Detalhes do Local</h2>
             <img id="place-image-large" class="place-image-large" src="" alt="">
@@ -378,15 +386,25 @@
                 mapsLink: "https://www.google.com/maps/place/Restaurante+Jangada+Limeira/@-22.5351279,-47.38671,17z/data=!3m1!4b1!4m6!3m5!1s0x94c8806451a5338f:0x8fdab000a30a1267!8m2!3d-22.5351279!4d-47.3841351!16s%2Fg%2F1ydntnsny?entry=ttu&g_ep=EgoyMDI1MDkwMy4wIKXMDSoASAFQAw%3D%3D"
             }
         ];
-        
+
         let selectedPlace = null;
         let countdownInterval;
         let secondsLeft = 10;
-        
+        let currentRotation = 0;
+
         // Inicializar a roleta
         function initWheel() {
             const wheel = document.getElementById('wheel');
             const angle = 360 / places.length;
+            
+            // Criar a seta dinâmica
+            const pointer = document.createElement('div');
+            pointer.className = 'wheel-pointer';
+            pointer.innerHTML = '▼';
+            pointer.id = 'dynamicPointer';
+            
+            // Adicionar a seta ao container
+            document.querySelector('.wheel-container').appendChild(pointer);
             
             places.forEach((place, index) => {
                 const item = document.createElement('div');
@@ -412,12 +430,18 @@
                 item.appendChild(content);
                 wheel.appendChild(item);
             });
+
+            document.getElementById('spinButton').addEventListener('click', startRoulette);
         }
-        
+
         // Inicializar a roleta quando a página carregar
         window.onload = initWheel;
-        
+
         function startRoulette() {
+            // Esconder a seta anterior
+            const pointer = document.getElementById('dynamicPointer');
+            pointer.classList.remove('visible');
+            
             // Resetar seleção anterior
             if (selectedPlace) {
                 const prevElement = document.getElementById(selectedPlace.id);
@@ -427,27 +451,36 @@
             // Esconder detalhes do local anterior
             document.getElementById('place-detail').style.display = 'none';
             
-            const button = document.querySelector('.spin-button');
+            const button = document.getElementById('spinButton');
             button.disabled = true;
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Girando...';
             
             document.getElementById('result').style.display = 'none';
             
-            // Sortear um lugar aleatório
+            // 1. PRIMEIRO: Sortear um lugar aleatório
             const randomIndex = Math.floor(Math.random() * places.length);
             selectedPlace = places[randomIndex];
             
-            // Calcular ângulo para parar no lugar selecionado
-            const wheel = document.getElementById('wheel');
-            const currentRotation = parseInt(wheel.style.transform.replace('rotate(', '').replace('deg)', '')) || 0;
-            const targetAngle = 3600 + (randomIndex * (360 / places.length)); // 10 voltas + posição do item
+            console.log("Resultado sorteado:", selectedPlace.name, "Índice:", randomIndex);
             
-            // Girar a roleta
+            // 2. CALCULAR: Ângulo exato para parar no lugar sorteado
+            const wheel = document.getElementById('wheel');
+            const totalItems = places.length;
+            const degreesPerItem = 360 / totalItems;
+            
+            // CÁLCULO CORRIGIDO:
+            const extraRotations = 5;
+            const targetRotation = (extraRotations * 360) + (randomIndex * degreesPerItem) + (360 - 90);
+            
+            // 3. APLICAR: A rotação calculada
             wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.21, 0.99)';
-            wheel.style.transform = `rotate(${targetAngle}deg)`;
+            wheel.style.transform = `rotate(${targetRotation}deg)`;
             
             // Quando a roleta parar
             setTimeout(() => {
+                // MOSTRAR A SETA quando a roleta parar
+                pointer.classList.add('visible');
+                
                 // Destacar o lugar selecionado
                 const selectedElement = document.getElementById(selectedPlace.id);
                 selectedElement.classList.add('selected');
@@ -482,7 +515,7 @@
                 createConfetti();
             }, 4000);
         }
-        
+
         function showPlaceDetails(place) {
             const detailSection = document.getElementById('place-detail');
             const placeImage = document.getElementById('place-image-large');
@@ -497,11 +530,11 @@
             // Mostrar a seção de detalhes
             detailSection.style.display = 'block';
         }
-        
+
         function confirmSelection(place) {
             alert(`🎉 Combinado! Vamos para ${place.name}! \n\nTe envio uma mensagem para acertarmos os detalhes!`);
         }
-        
+
         function createConfetti() {
             for (let i = 0; i < 100; i++) {
                 const confetti = document.createElement('div');
