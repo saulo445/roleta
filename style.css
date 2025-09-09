@@ -274,3 +274,28 @@ footer {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* NOVO ESTILO PARA SETA DINÂMICA */
+.wheel-pointer {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 40px;
+    z-index: 11;
+    font-size: 2rem;
+    color: #ff6b6b;
+    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.7));
+    display: none; /* Começa escondida */
+}
+
+.wheel-pointer.visible {
+    display: block; /* Aparece quando tiver a classe visible */
+    animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+    0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+    100% { transform: translateX(-50%) scale(1); opacity: 1; }
+}
