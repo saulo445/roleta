@@ -1,3 +1,4 @@
+// Configurações e variáveis globais
 const places = [
     { 
         id: "tacho", 
@@ -56,6 +57,16 @@ function initWheel() {
     const wheel = document.getElementById('wheel');
     const angle = 360 / places.length;
     
+    // Criar a seta dinâmica
+    const pointer = document.createElement('div');
+    pointer.className = 'wheel-pointer';
+    pointer.innerHTML = '▼';
+    pointer.id = 'dynamicPointer';
+    
+    // Adicionar a seta ao container
+    document.querySelector('.wheel-container').appendChild(pointer);
+    
+    // Criar os itens da roleta
     places.forEach((place, index) => {
         const item = document.createElement('div');
         item.className = 'wheel-item';
@@ -80,16 +91,25 @@ function initWheel() {
         item.appendChild(content);
         wheel.appendChild(item);
     });
+
+    // Adicionar evento de clique ao botão
+    document.getElementById('spinButton').addEventListener('click', startRoulette);
+    
+    console.log('Roleta inicializada com sucesso!');
 }
 
-// Inicializar a roleta quando a página carregar
-window.onload = initWheel;
-
+// Função principal de sorteio
 function startRoulette() {
+    // Esconder a seta anterior
+    const pointer = document.getElementById('dynamicPointer');
+    pointer.classList.remove('visible');
+    
     // Resetar seleção anterior
     if (selectedPlace) {
         const prevElement = document.getElementById(selectedPlace.id);
-        prevElement.classList.remove('selected');
+        if (prevElement) {
+            prevElement.classList.remove('selected');
+        }
     }
     
     // Esconder detalhes do local anterior
@@ -105,21 +125,18 @@ function startRoulette() {
     const randomIndex = Math.floor(Math.random() * places.length);
     selectedPlace = places[randomIndex];
     
-    console.log("Resultado sorteado:", selectedPlace.name, "Índice:", randomIndex);
+    console.log("🎯 Resultado sorteado:", selectedPlace.name, "Índice:", randomIndex);
     
     // 2. CALCULAR: Ângulo exato para parar no lugar sorteado
     const wheel = document.getElementById('wheel');
     const totalItems = places.length;
     const degreesPerItem = 360 / totalItems;
     
-    // CÁLCULO CORRIGIDO:
-    // - Cada item começa em (índice * degreesPerItem) graus
-    // - Precisamos fazer a roleta parar com a SETA apontando para o item
-    // - A seta está no topo (0 graus), então o item deve estar a 90 graus da seta
-    const extraRotations = 5; // Número de voltas completas extras para efeito
-    
-    // Ângulo final = voltas completas + posição do item - offset para alinhar com a seta
+    // Cálculo preciso do ângulo final
+    const extraRotations = 5; // Voltas completas para efeito
     const targetRotation = (extraRotations * 360) + (randomIndex * degreesPerItem) + (360 - 90);
+    
+    console.log("📐 Ângulo calculado:", targetRotation, "graus");
     
     // 3. APLICAR: A rotação calculada
     wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.21, 0.99)';
@@ -127,9 +144,14 @@ function startRoulette() {
     
     // Quando a roleta parar
     setTimeout(() => {
+        // MOSTRAR A SETA quando a roleta parar
+        pointer.classList.add('visible');
+        
         // Destacar o lugar selecionado
         const selectedElement = document.getElementById(selectedPlace.id);
-        selectedElement.classList.add('selected');
+        if (selectedElement) {
+            selectedElement.classList.add('selected');
+        }
         
         // Mostrar o resultado
         document.getElementById('selected-place').textContent = selectedPlace.name;
@@ -139,19 +161,7 @@ function startRoulette() {
         showPlaceDetails(selectedPlace);
         
         // Iniciar a contagem regressiva
-        secondsLeft = 10;
-        document.getElementById('timer').textContent = `Confirmando em: ${secondsLeft} segundos`;
-        
-        clearInterval(countdownInterval);
-        countdownInterval = setInterval(() => {
-            secondsLeft--;
-            document.getElementById('timer').textContent = `Confirmando em: ${secondsLeft} segundos`;
-            
-            if (secondsLeft <= 0) {
-                clearInterval(countdownInterval);
-                confirmSelection(selectedPlace);
-            }
-        }, 1000);
+        startCountdown();
         
         // Reativar o botão
         button.disabled = false;
@@ -159,9 +169,28 @@ function startRoulette() {
         
         // Efeito de confete
         createConfetti();
+        
     }, 4000);
 }
 
+// Iniciar contagem regressiva
+function startCountdown() {
+    secondsLeft = 10;
+    document.getElementById('timer').textContent = `Confirmando em: ${secondsLeft} segundos`;
+    
+    clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+        secondsLeft--;
+        document.getElementById('timer').textContent = `Confirmando em: ${secondsLeft} segundos`;
+        
+        if (secondsLeft <= 0) {
+            clearInterval(countdownInterval);
+            confirmSelection(selectedPlace);
+        }
+    }, 1000);
+}
+
+// Mostrar detalhes do local sorteado
 function showPlaceDetails(place) {
     const detailSection = document.getElementById('place-detail');
     const placeImage = document.getElementById('place-image-large');
@@ -170,6 +199,7 @@ function showPlaceDetails(place) {
     
     // Preencher os detalhes
     placeImage.src = place.imageLarge;
+    placeImage.alt = place.name;
     placeName.textContent = place.name;
     mapLink.href = place.mapsLink;
     
@@ -177,21 +207,77 @@ function showPlaceDetails(place) {
     detailSection.style.display = 'block';
 }
 
+// Confirmar seleção automática
 function confirmSelection(place) {
-    alert(`🎉 Combinado! Vamos para ${place.name}! \n\nTe envio uma mensagem para acertarmos os detalhes!`);
-}
-
-function createConfetti() {
-    for (let i = 0; i < 100; i++) {
-        const confetti = document.createElement('div');
-        confetti.classList.add('confetti');
-        confetti.style.left = Math.random() * 100 + 'vw';
-        confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-        confetti.style.animation = `confettiFall ${Math.random() * 3 + 2}s linear forwards`;
-        document.body.appendChild(confetti);
-        
-        setTimeout(() => {
-            confetti.remove();
-        }, 5000);
+    if (place) {
+        alert(`🎉 Combinado! Vamos para ${place.name}! \n\nTe envio uma mensagem para acertarmos os detalhes!`);
     }
 }
+
+// Criar efeito de confete
+function createConfetti() {
+    const confettiCount = 100;
+    
+    for (let i = 0; i < confettiCount; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        
+        // Posição aleatória
+        confetti.style.left = Math.random() * 100 + 'vw';
+        
+        // Cor aleatória
+        confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        
+        // Animação aleatória
+        const duration = Math.random() * 3 + 2;
+        confetti.style.animation = `confettiFall ${duration}s linear forwards`;
+        
+        document.body.appendChild(confetti);
+        
+        // Remover após animação
+        setTimeout(() => {
+            if (confetti.parentNode) {
+                confetti.remove();
+            }
+        }, duration * 1000 + 1000);
+    }
+}
+
+// Inicializar quando a página carregar
+document.addEventListener('DOMContentLoaded', function() {
+    initWheel();
+    console.log('Página carregada e pronta!');
+});
+
+// Função para tocar música (opcional)
+function toggleMusic() {
+    const music = document.getElementById('backgroundMusic');
+    const button = document.querySelector('.music-button');
+    
+    if (music.paused) {
+        music.play();
+        button.innerHTML = '🔊';
+        button.style.background = '#4ECDC4';
+    } else {
+        music.pause();
+        button.innerHTML = '🎵';
+        button.style.background = '#ff6b6b';
+    }
+}
+
+// Iniciar música com interação do usuário
+function startMusicOnInteraction() {
+    const music = document.getElementById('backgroundMusic');
+    if (music) {
+        music.volume = 0.3;
+        music.play().catch(error => {
+            console.log("Música precisa de interação do usuário");
+        });
+    }
+}
+
+// Adicionar evento de clique para iniciar música
+document.addEventListener('click', function initMusic() {
+    startMusicOnInteraction();
+    document.removeEventListener('click', initMusic);
+});
